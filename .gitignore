@@ -1,0 +1,14 @@
+# Python specific ignores
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+
+# Streamlit secrets and config file
+.streamlit/secrets.toml
+config.json
+
+# Logs and temporary files (optional, but good practice)
+*.log
+*.tmp
