@@ -248,132 +248,56 @@ def get_checklist_from_openai(user_trip_details, vector_store_id):
 
 # --- Generate Trip Advice based on submitted form data ---
 def generate_trip_advice(submitted_data: dict, checklist_structure: FullChecklist) -> str:
-    """
-    Analyzes submitted inspection data against the checklist structure
-    to provide advice on trip preparedness.
-    """
     issues_found = []
-    
- 
-    checklist_items_map = {}
+    total_items = 0
+    passed_count = 0
+    failed_count = 0
+    skipped_count = 0
+
     for group in checklist_structure.root:
         for item in group.Checklist:
-            checklist_items_map[item.ChecklistId] = {"name": item.ChecklistName, "type": item.ChecklistType}
-
-
-    for item_id, response in submitted_data.items():
-        item_details = checklist_items_map.get(item_id, {"name": "Unknown Item", "type": ""})
-        item_name = item_details["name"]
-        item_type = item_details["type"]
-
-        # Identify negative responses based on ChecklistType
-        if item_type == "Pass/Fail" and response == "Fail":
-            issues_found.append(f"- {item_name}: Failed")
-        elif item_type == "Yes/No" and response == "No":
-            issues_found.append(f"- {item_name}: No")
-        elif item_type == "Okay/Not Okay" and response == "Not Okay":
-            issues_found.append(f"- {item_name}: Not Okay")
-        elif response is None: # Handle cases where an item might not have been selected
-            issues_found.append(f"- {item_name}: No selection made (please check)")
-
-    if issues_found:
-        advice = "## ⚠️ Trip Preparedness: Caution Needed\n\n"
-        advice += "Based on your inspection, there are items that require attention before your trip:\n"
-        advice += "\n".join(issues_found)
-        advice += "\n\nIt is highly recommended to address these issues to ensure a safe journey."
-        return advice
-    else:
-        return "## ✅ Trip Preparedness: All Clear!\n\nYour vehicle inspection indicates that you are well-prepared for your trip. Have a safe journey!"
-
-# def generate_inspection_summary_and_advice(submitted_data: dict, checklist_structure: FullChecklist, vehicle_plate_number: str) -> str:
-#     """
-#     Generates a concise summary and advice for the inspection report,
-#     mimicking the "Comments & Analysis" section from the reference PDF.
-#     """
-#     total_items = 0
-#     passed_items = 0
-#     failed_items = 0
-#     failed_list = []
-#     recommendations = []
-    
-#     checklist_items_map = {}
-#     for group in checklist_structure.root:
-#         for item in group.Checklist:
-#             checklist_items_map[item.ChecklistId] = {"name": item.ChecklistName, "type": item.ChecklistType}
-#             total_items += 1
-
-#     for item_id, response in submitted_data.items():
-#         item_details = checklist_items_map.get(item_id)
-#         if not item_details:
-#             continue
+            total_items += 1
+            unique_id = f"{group.GroupId}_{item.ChecklistId}_{item.ChecklistSerialNo}"
             
-#         item_name = item_details["name"]
-#         item_type = item_details["type"]
+            # Get the value without a default first to check if it's explicitly None
+            raw_response = submitted_data.get(unique_id) 
 
-#         is_failed = False
-#         if item_type == "Pass/Fail" and response == "Fail":
-#             is_failed = True
-#         elif item_type == "Yes/No" and response == "No":
-#             is_failed = True
-#         elif item_type == "Okay/Not Okay" and response == "Not Okay":
-#             is_failed = True
-#         elif response is None or response == "No selection made": 
-#             is_failed = True
+            # Crucial check: If raw_response is None, force it to "No selection made"
+            if raw_response is None:
+                response = "No selection made"
+            else:
+                # Ensure it's a string, then strip and lower. This handles cases where
+                # a non-string might have crept in, although it should be strings or None.
+                response = str(raw_response).strip().lower()
+
+            item_name = item.ChecklistName
+            item_type = item.ChecklistType.lower()
+
+            if response in ["pass", "yes", "okay"]:
+                passed_count += 1
+            elif response in ["fail", "no", "not okay"]:
+                failed_count += 1
+                issues_found.append(f"- {item_name}: {response.capitalize()}")
+            elif response == "no selection made":
+                skipped_count += 1
+                issues_found.append(f"- {item_name}: No selection made")
+            
+    advice_message = ""
+    if failed_count > 0 or skipped_count > 0:
+        advice_message = "## ⚠️ Trip Preparedness: Caution Needed\n\n"
+        if failed_count > 0:
+            advice_message += f"Based on your inspection, {failed_count} item(s) failed and require immediate attention.\n"
+        if skipped_count > 0:
+            advice_message += f"Additionally, {skipped_count} item(s) were skipped and could not be assessed. A full inspection is recommended.\n"
         
-#         if is_failed:
-#             failed_items += 1
-#             failed_list.append(item_name)
-#         else:
-#             passed_items += 1
-            
-#     # Calculate pass rate
-#     pass_rate = (passed_items / total_items * 100) if total_items > 0 else 0
+        advice_message += "\nItems requiring attention:\n"
+        advice_message += "\n".join(issues_found)
+        advice_message += "\n\nIt is highly recommended to address these issues to ensure a safe journey."
+    else:
+        advice_message = "## ✅ Trip Preparedness: All Clear!\n\nYour vehicle inspection indicates that you are well-prepared for your trip. All items passed the inspection. Have a safe journey!"
 
-#     # --- Constructing the Summary ---
-#     summary_parts = []
-#     report_date = datetime.datetime.now().strftime("%B %d, %Y")
+    return advice_message
 
-#     # Opening statement
-#     if failed_items > 0:
-#         summary_parts.append(f"The vehicle inspection conducted on {report_date}, for Vehicle ID {vehicle_plate_number} revealed several critical findings that require immediate attention.")
-#     else:
-#         summary_parts.append(f"The vehicle inspection conducted on {report_date}, for Vehicle ID {vehicle_plate_number} revealed satisfactory findings, indicating good vehicle condition.")
-
-#     # Failed items list
-#     if failed_list:
-#         summary_parts.append("\n- The vehicle failed to meet standards in multiple areas, including:")
-#         for item in failed_list:
-#             summary_parts.append(f"  - {item}")
-#         summary_parts.append("\nThese failures have significant implications for the vehicle's compliance with regulations and safety standards, which could affect its operational status and legality on the road.")
-
-#     # Recommendations
-#     summary_parts.append("\nNext actions are recommended as follows:")
-#     if "Air Conditioning System" in [g.GroupName for g in checklist_structure.root] and any(item in failed_list for item in ["Is the air conditioning blowing cold air efficiently?", "Are the AC controls functioning correctly?", "Is the air filter clean?"]):
-#         recommendations.append("Address issues related to the Air Conditioning System to ensure comfortable and healthy cabin environment.")
-#     if "Emergency Kit" in [g.GroupName for g in checklist_structure.root] and any(item in failed_list for item in ["Is the first aid kit fully stocked?", "Are there fresh water bottles in the kit?", "Is there a flashlight with working batteries?", "Are the emergency contact numbers updated?", "Is there a safety triangle or emergency flare available?"]):
-#         recommendations.append("Ensure the Emergency Kit is complete and up-to-date for roadside emergencies.")
-#     if "Spare Tire and Tools" in [g.GroupName for g in checklist_structure.root] and any(item in failed_list for item in ["Is the spare tire properly inflated?", "Are all necessary tools (jack, wrench) available?", "Is the spare tire free from visible damage?"]):
-#         recommendations.append("Verify the spare tire and tools are in good working order for unexpected tire issues.")
-    
-#     # Generic recommendation if no specific ones apply or as a fallback
-#     if not recommendations:
-#         if failed_items > 0:
-#             recommendations.append("Review all identified failures and take appropriate corrective actions to improve vehicle safety and compliance.")
-#         else:
-#             recommendations.append("Continue regular maintenance and inspections to ensure the vehicle remains in optimal condition.")
-
-#     for rec in recommendations:
-#         summary_parts.append(f"- {rec}")
-
-#     # Overall Pass Rate
-#     if total_items > 0:
-#         summary_parts.append(f"\nOverall, the vehicle passed {passed_items} out of {total_items} items, resulting in a pass rate of {pass_rate:.0f}%.")
-#         if pass_rate < 50:
-#             summary_parts.append("This indicates a need for considerable improvement to meet operational standards effectively. Timely corrective measures will enhance the vehicle's reliability and safety for operations.")
-#         else:
-#             summary_parts.append("This indicates good progress towards meeting operational standards. Continued diligent maintenance will ensure reliability and safety for operations.")
-
-#     return "\n".join(summary_parts)
 
 # --- Streamlit App Layout ---
 st.set_page_config(layout="wide", page_icon="🚗", page_title="Vehicle Trip Checklist Generator")
@@ -524,9 +448,9 @@ elif st.session_state.checklist_data and st.session_state.generate_form_clicked 
                         st.session_state.selectbox_indices[selectbox_key] = 0
 
                     if selected_option != "--- Select ---":
-                        form_data[item.ChecklistId] = selected_option
+                        form_data[selectbox_key] = selected_option
                     else:
-                        form_data[item.ChecklistId] = None
+                        form_data[selectbox_key] = "No selection made"
 
             # 5) The form submission section
             submitted = st.form_submit_button("Submit Inspection Form")
@@ -612,7 +536,7 @@ elif st.session_state.checklist_data and st.session_state.generate_form_clicked 
             st.markdown(f"### {group.GroupName}")
             for item in group.Checklist:
                 st.markdown(
-                    f"- {item.ChecklistSerialNo}. {item.ChecklistName} (Type: <span style='color:green; font-weight:bold;'>{item.ChecklistType}</span>)",
+                    f"- {item.ChecklistName} (Type: <span style='color:green; font-weight:bold;'>{item.ChecklistType}</span>)",
                     unsafe_allow_html=True
                 )
         st.markdown("---")
