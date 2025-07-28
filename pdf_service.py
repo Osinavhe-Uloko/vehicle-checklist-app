@@ -84,7 +84,6 @@ def generate_inspection_pdf(
 
     # --- Header Section ---
     if logo_path and os.path.exists(logo_path):
-        # Calculate image width to fit within page margins
         available_width = letter[0] - 2 * inch # Assuming 1-inch margins on each side
         
         # Adjust width/height as needed for your logo's aspect ratio and desired size
@@ -96,7 +95,6 @@ def generate_inspection_pdf(
         # Fallback to text title if no logo path is provided or file doesn't exist
         elements.append(Paragraph("Camanda", styles['CompanyName']))
 
-    # elements.append(Paragraph("Camanda", styles['CompanyName']))
     elements.append(Paragraph("VEHICLE INSPECTION REPORT", styles['CenteredTitle']))
     elements.append(Spacer(1, 0.2 * inch))
 
@@ -138,7 +136,6 @@ def generate_inspection_pdf(
     elements.append(Paragraph("Inspection Summary", styles['SectionHeader']))
     elements.append(Spacer(1, 0.1 * inch))
 
-    # --- New: Group Pass Rate Table ---
     group_pass_rate_data = _calculate_group_pass_rates(checklist_data, submitted_form_data)
 
     # Table header
@@ -173,7 +170,7 @@ def generate_inspection_pdf(
     elements.append(group_pass_rate_table)
     elements.append(Spacer(1, 0.2 * inch)) # Spacer after group table
 
-    # --- Existing: Overall Inspection Summary (Total Items, Passed, Failed, Skipped) ---
+    # --- Overall Inspection Summary (Total Items, Passed, Failed, Skipped) ---
     summary_percentages = _calculate_summary_percentages(checklist_data, submitted_form_data)
     
     # Data for the overall summary table
@@ -218,7 +215,6 @@ def generate_inspection_pdf(
 
         for item in group.Checklist:
             unique_id = f"{group.GroupId}_{item.ChecklistId}_{item.ChecklistSerialNo}"
-            # Get the raw user input, strip whitespace, but keep original casing for display
             # item_status = submitted_form_data.get(unique_id, "No selection made")
             
             raw_item_status = submitted_form_data.get(unique_id)
@@ -261,27 +257,6 @@ def generate_inspection_pdf(
         elements.append(group_table)
         elements.append(Spacer(1, 0.2 * inch))
 
-    # # --- Trip Advice Summary ---
-    # # elements.append(PageBreak())
-    # elements.append(Spacer(1, 0.4 * inch))
-    # elements.append(Paragraph("Trip Advice Summary", styles['SectionHeader']))
-    # elements.append(Spacer(1, 0.1 * inch))
-
-    # advice_lines = trip_advice_content.split('\n')
-    # for line in advice_lines:
-    #     if line.strip():
-    #         if line.startswith("## "):
-    #             display_text = line[3:]
-    #             if "All Clear" in display_text:
-    #                 elements.append(Paragraph(display_text, styles['AdviceHeaderGreen']))
-    #             else:
-    #                 elements.append(Paragraph(display_text, styles['AdviceHeader']))
-    #         elif line.startswith("- "):
-    #             elements.append(Paragraph(line, styles['AdviceBody']))
-    #         else:
-    #             elements.append(Paragraph(line, styles['AdviceBody']))
-    
-    # elements.append(Spacer(1, 0.2 * inch))
 
     # --- Comments & Analysis Section (Dynamically Generated) ---
     elements.append(Paragraph("Comments & Analysis", styles['SectionHeader']))
@@ -289,11 +264,6 @@ def generate_inspection_pdf(
     # Dynamically generate comments_analysis_text
     comments_and_analysis_flowables = _generate_comments_and_analysis(summary_percentages, trip_advice_content)
     elements.extend(comments_and_analysis_flowables) # Extend the main elements list with these flowables
-    # for line in comments_lines:
-    #     if line.strip():
-    #         # Apply Normal style for comments, bolding will be handled by HTML tags in the text
-    #         elements.append(Paragraph(line, styles['Normal']))
-    # elements.append(Spacer(1, 0.2 * inch))
 
 
     try:
@@ -315,8 +285,7 @@ def _calculate_summary_percentages(checklist_data: FullChecklist, submitted_form
         for item in group.Checklist:
             total_items += 1
             unique_id = f"{group.GroupId}_{item.ChecklistId}_{item.ChecklistSerialNo}"
-            # Ensure result is stripped and lowercased for robust comparison
-            # result = submitted_form_data.get(unique_id, "No selection made").strip().lower() 
+
             raw_result = submitted_form_data.get(unique_id)
             
             result = "no selection made" # Default assignment
@@ -333,8 +302,7 @@ def _calculate_summary_percentages(checklist_data: FullChecklist, submitted_form
                 failed_count += 1
                 # Add failed item with status 'failed' to the new list
                 items_requiring_attention.append({"name": item.ChecklistName, "type": item.ChecklistType, "status": "failed"})
-                # You can remove failed_items_list.append if it's no longer used elsewhere in summary_percentages
-                # failed_items_list.append({"name": item.ChecklistName, "type": item.ChecklistType}) 
+
             elif result == "no selection made":
                 skipped_count += 1
                 # Add skipped item with status 'skipped' to the new list
@@ -357,8 +325,7 @@ def _calculate_summary_percentages(checklist_data: FullChecklist, submitted_form
         "failed_percentage": failed_percentage,
         "skipped_count": skipped_count,
         "skipped_percentage": skipped_percentage,
-        # "failed_items_list": failed_items_list, # Remove or keep if other parts use it
-        "items_requiring_attention": items_requiring_attention # <-- ADD THIS NEW FIELD
+        "items_requiring_attention": items_requiring_attention
     }
 
     return summary
@@ -421,7 +388,7 @@ def _get_resolution_advice(item_name: str, item_type: str, item_status: str) -> 
 def _generate_comments_and_analysis(
     summary_percentages: Dict[str, Any],
     trip_advice_content: str # This is the overall advice from stream.py
-) -> list: # Changed return type to list
+) -> list:
     styles = getSampleStyleSheet()
     comments_lines = []
 
@@ -448,7 +415,7 @@ def _generate_comments_and_analysis(
         # Replace markdown headers with bold text and clean up newlines for PDF
         display_trip_advice = trip_advice_content.replace('## ⚠️ Trip Preparedness: Caution Needed', '<b>Overall Trip Preparedness: Caution Needed</b>')
         display_trip_advice = display_trip_advice.replace('## ✅ Trip Preparedness: All Clear!', '<b>Overall Trip Preparedness: All Clear!</b>')
-        display_trip_advice = display_trip_advice.replace('\n', '<br/>') # Convert newlines to HTML breaks for Paragraph
+        display_trip_advice = display_trip_advice.replace('\n', '<br/>')
         comments_lines.append(Paragraph(display_trip_advice, normal_style))
         comments_lines.append(Spacer(1, 0.1 * inch))
 
@@ -481,8 +448,7 @@ def _generate_comments_and_analysis(
 
     comments_lines.append(Spacer(1, 0.2 * inch))
 
-     # Retrieve the new list of items requiring attention
-    # items_requiring_attention = summary_percentages.get("items_requiring_attention", []) 
+
 
     # --- Advice for Items Requiring Attention ---
     if items_requiring_attention:

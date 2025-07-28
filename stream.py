@@ -338,7 +338,7 @@ if st.session_state.inspection_form_submitted:
 
     st.markdown("---")
     
-    # NEW: Download PDF button
+    # Download PDF button
     # The button will only appear if generated_pdf_path exists and the file is there.
     # The file will persist until 'Start New Inspection' is clicked.
     if st.session_state.generated_pdf_path and os.path.exists(st.session_state.generated_pdf_path):
@@ -469,12 +469,6 @@ elif st.session_state.checklist_data and st.session_state.generate_form_clicked 
                         st.session_state.checklist_data
                     )
 
-                    # if st.session_state.inspection_form_submitted and st.session_state.submitted_form_data:
-                    #     comments_analysis_text = generate_inspection_summary_and_advice(
-                    #         st.session_state.submitted_form_data,
-                    #         st.session_state.checklist_data,
-                    #         st.session_state.vehicle_plate_number
-                    #     )
 
                     # Generate PDF report in a temporary file
                     # We create a temporary directory to store our named PDF file
@@ -571,9 +565,6 @@ elif st.session_state.checklist_data and st.session_state.generate_form_clicked 
                         pre_form_submitted = False # Prevent submission if validation fails
                     
                     # Validate Vehicle Plate Number (e.g., ABC-123DE)
-                    # elif pre_form_submitted and not vehicle_plate_input.strip():
-                    #     st.error("Please enter the Vehicle Plate Number.")
-                    #     pre_form_submitted = False
                     elif pre_form_submitted and not re.match(r"^[A-Z]{3}-\d{3}[A-Z]{2}$", vehicle_plate_input.upper()):
                         st.error("Please enter a valid Vehicle Plate Number in the format AAA-123AA.")
                         pre_form_submitted = False
