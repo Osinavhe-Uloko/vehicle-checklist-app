@@ -7,6 +7,7 @@ from reportlab.lib.colors import HexColor, black, lightgrey, grey, white
 import datetime
 import uuid
 from typing import List, Dict, Any, Optional
+import os
 
 from pydantic import BaseModel, Field, RootModel, AliasChoices
 from typing import List, Literal, Optional
@@ -33,6 +34,7 @@ def generate_inspection_pdf(
     checklist_data: FullChecklist,
     submitted_form_data: Dict[str, str],
     trip_advice_content: str,
+    logo_path: Optional[str] = None,
     file_name: str = "Inspection_Report.pdf"
 ) -> Optional[str]:
     """
@@ -81,18 +83,20 @@ def generate_inspection_pdf(
         canvas_obj.restoreState()
 
     # --- Header Section ---
-    try:
-        # Assuming you have a logo file. Adjust path and size as needed.
-        # logo = Image("path/to/your/gamanda_logo.png", width=1.5*inch, height=0.5*inch)
-        # elements.append(logo)
-        # elements.append(Spacer(1, 0.1 * inch))
-        pass
-    except FileNotFoundError:
-        print("Logo image not found. Skipping logo.")
-    except Exception as e:
-        print(f"Error loading logo: {e}. Skipping logo.")
+    if logo_path and os.path.exists(logo_path):
+        # Calculate image width to fit within page margins
+        available_width = letter[0] - 2 * inch # Assuming 1-inch margins on each side
+        
+        # Adjust width/height as needed for your logo's aspect ratio and desired size
+        # 'kind='proportional'' maintains aspect ratio
+        logo = Image(logo_path, width=3*inch, height=1*inch, kind='proportional') 
+        logo.hAlign = 'CENTER' # Center the image
+        elements.append(logo)
+    else:
+        # Fallback to text title if no logo path is provided or file doesn't exist
+        elements.append(Paragraph("Camanda", styles['CompanyName']))
 
-    elements.append(Paragraph("Camanda", styles['CompanyName']))
+    # elements.append(Paragraph("Camanda", styles['CompanyName']))
     elements.append(Paragraph("VEHICLE INSPECTION REPORT", styles['CenteredTitle']))
     elements.append(Spacer(1, 0.2 * inch))
 

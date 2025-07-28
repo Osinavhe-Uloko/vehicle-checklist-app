@@ -482,7 +482,7 @@ elif st.session_state.checklist_data and st.session_state.generate_form_clicked 
                     os.makedirs(pdf_temp_dir, exist_ok=True)
                     st.session_state.generated_pdf_temp_dir = pdf_temp_dir # Store temp dir for cleanup
 
-
+                    logo_file_path = os.path.join(os.path.dirname(__file__), "logo.png")
                     pdf_file_path = None
                     try:
                         pdf_file_path = generate_inspection_pdf(
@@ -492,6 +492,7 @@ elif st.session_state.checklist_data and st.session_state.generate_form_clicked 
                             st.session_state.checklist_data,
                             st.session_state.submitted_form_data,
                             trip_advice_content,
+                            logo_path=logo_file_path,
                             file_name="Inspection Report.pdf"# Pass the desired path
                         )
                         if pdf_file_path:
