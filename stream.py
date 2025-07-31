@@ -231,7 +231,7 @@ def setup_openai_resources():
         # Step 3: Create or retrieve the Checklist Assistant
         if not assistant_id_checklist:
             checklist_assistant = client.beta.assistants.create(
-                name="Vehicle Checklist Generator",
+                name="CAMANDA Vehicle Checklist Generator",
                 instructions=SYSTEM_PROMPT_CHECKLIST, # Use global constant
                 model="gpt-4o",
                 tools=[{"type": "file_search"}],
@@ -467,8 +467,8 @@ def generate_trip_advice(submitted_form_data: Dict[str, str], checklist_data: Fu
 
 
 # --- Streamlit UI Layout ---
-st.set_page_config(layout="wide", page_icon="🚗", page_title="Vehicle Trip Checklist Generator")
-st.title("🚗 Vehicle Trip Checklist Generator")
+st.set_page_config(layout="wide", page_icon="🚗", page_title="CAMANDA Vehicle Trip Checklist Generator")
+st.title("🚗 CAMANDA Vehicle Trip Checklist Generator")
 
 # Pre-inspection Form
 if not st.session_state.pre_inspection_form_submitted:
