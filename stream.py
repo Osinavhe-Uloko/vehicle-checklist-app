@@ -160,7 +160,7 @@ if 'session_id' not in st.session_state:
             'app_name': 'Vehicle Trip Checklist Generator',
             'page_name': 'Main Dashboard',
             'device_type': 'Web', # Streamlit runs in a browser
-            'session_id': st.session_state.session_id, # Pass session_id as a property
+            # 'session_id': st.session_state.session_id, # Pass session_id as a property
             'timestamp': datetime.datetime.utcnow().isoformat() + 'Z' # ISO 8601 with Z for UTC
         }
     )
@@ -486,15 +486,24 @@ if not st.session_state.pre_inspection_form_submitted:
                 st.session_state.vehicle_plate_number = vehicle_plate_number
                 st.session_state.pre_inspection_form_submitted = True
                 
-                # Track 'Pre-Inspection Form Submitted'
+                # Identify the user with their actual name and email
                 analytics.identify(
-                    user_id=st.session_state.user_anonymous_id, # Use the persistent anonymous ID as user_id
+                    user_id=st.session_state.session_id,
                     traits={
-                        'name': user_name,
-                        'email': user_email,
-                        'vehicle_plate_number': vehicle_plate_number,
-                        'app_name': 'Vehicle Trip Checklist Generator',
-                        'session_id': st.session_state.session_id, # Pass session_id as a trait for context
+                        'userID': st.session_state.user_anonymous_id,
+                        'name': st.session_state.user_name,
+                        'email': st.session_state.user_email
+                    }
+                )
+
+                # Track an event related to this submission
+                analytics.track(
+                    user_id=st.session_state.user_anonymous_id,
+                    event='Pre-Inspection Form Submitted',
+                    properties={
+                        'user_name': st.session_state.user_name,
+                        'user_email': st.session_state.user_email,
+                        'vehicle_plate_number': st.session_state.vehicle_plate_number,
                         'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
                     }
                 )
