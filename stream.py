@@ -154,7 +154,7 @@ if 'session_id' not in st.session_state:
     # --- End Segment Python SDK Initialization ---
 
     analytics.track(
-        user_id=st.session_state.user_anonymous_id, # Use the persistent anonymous ID as user_id
+        user_id=st.session_state.session_id, # Use the persistent anonymous ID as user_id
         event='Application Viewed',
         properties={
             'app_name': 'Vehicle Trip Checklist Generator',
