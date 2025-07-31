@@ -792,12 +792,14 @@ else:
                 # Log final session tokens before resetting
                 if st.session_state.total_session_tokens > 0:
                     analytics.track(
-                        user_id=st.session_state.user_anonymous_id,
+                        user_id=st.session_state.session_id,
                         event='Session Concluded - Total Tokens Used',
                         properties={
                             'app_name': 'Vehicle Trip Checklist Generator',
                             'total_session_llm_tokens': st.session_state.total_session_tokens,
                             'session_id': st.session_state.session_id, # Pass session_id as a property
+                            'name': st.session_state.user_name,
+                            'email': st.session_state.user_email,
                             'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
                         }
                     )
