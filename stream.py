@@ -201,7 +201,6 @@ st.markdown("""
 # --- OpenAI Resources Setup ---
 @st.cache_resource
 def setup_openai_resources():
-    # Instantiate the client with the beta object to avoid deprecation warning
     client = OpenAI(api_key=st.secrets["openai_api_key"])
     config = load_config()
 
@@ -221,8 +220,8 @@ def setup_openai_resources():
 
         # Step 2: Create a vector store and link the file if not already done
         if not vector_store_id:
-            vector_store = client.beta.vector_stores.create(name="Vehicle Inspection Guide")
-            client.beta.vector_stores.file_batches.create(
+            vector_store = client.vector_stores.create(name="Vehicle Inspection Guide")
+            client.vector_stores.file_batches.create(
                 vector_store_id=vector_store.id, file_ids=[file_id]
             )
             vector_store_id = vector_store.id
@@ -258,7 +257,6 @@ def setup_openai_resources():
                 name="Trip Advice Generator",
                 instructions=SYSTEM_PROMPT_ADVICE, # Use global constant
                 model="gpt-4o",
-                # No file_search for this assistant, assuming it just processes text
             )
             assistant_id_advice = advice_assistant.id
             config["assistant_id_advice"] = assistant_id_advice
@@ -563,7 +561,7 @@ else:
                                     'llm_prompt_tokens': token_usage_checklist['prompt_tokens'] if token_usage_checklist else 0,
                                     'llm_completion_tokens': token_usage_checklist['completion_tokens'] if token_usage_checklist else 0,
                                     'llm_total_tokens': token_usage_checklist['total_tokens'] if token_usage_checklist else 0,
-                                    'total_session_tokens_so_far': st.session_state.total_session_tokens, # New property
+                                    'total_session_tokens_so_far': st.session_state.total_session_tokens,
                                     'session_id': st.session_state.session_id, # Pass session_id as a property
                                     'timestamp': datetime.datetime.utcnow().isoformat() + 'Z'
                                 }
@@ -597,12 +595,7 @@ else:
                     f"- {item.ChecklistName} (Type: <span style='color:green; font-weight:bold;'>{item.ChecklistType}</span>)",
                     unsafe_allow_html=True
                 )
-        # total_items = sum(len(group.Checklist) for group in st.session_state.checklist_data.root)
-        # st.info(f"The checklist contains **{len(st.session_state.checklist_data.root)} groups** and **{total_items} inspection items**.")
-        
-        # Display the first few items or a summary to match the screenshot style (optional)
-        # For simplicity, we'll just show the count. For a more detailed view like screenshot,
-        # you'd iterate through groups/items here, but without the interactive selectboxes.
+       
         
         st.markdown("---") # Separator before the button
         if st.button("Start Inspection", key="start_inspection_button"):
@@ -752,10 +745,9 @@ else:
                     st.session_state.show_report_section = True
                     st.rerun()
 
-    # --- Section 4: Inspection Report (Screenshot 2025-07-29 152916.png) ---
+    # --- Section 4: Inspection Report ---
     if st.session_state.show_report_section:
         st.markdown("---")
-        # st.subheader("Inspection Report")
         if st.session_state.generated_pdf_path:
             st.success("Inspection report generated successfully!")
             
@@ -786,12 +778,12 @@ else:
                 }
             )
 
-            # --- Start New Session Button (moved here) ---
+            # --- Start New Session Button ---
             if st.button("Start New Session", key="start_new_session_final_button"):
                 # Log final session tokens before resetting
                 if st.session_state.total_session_tokens > 0:
                     analytics.track(
-                        user_id=st.session_state.user_anonymous_id, # Use persistent anonymous ID
+                        user_id=st.session_state.user_anonymous_id,
                         event='Session Concluded - Total Tokens Used',
                         properties={
                             'app_name': 'Vehicle Trip Checklist Generator',
