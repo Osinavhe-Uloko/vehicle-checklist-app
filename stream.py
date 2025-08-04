@@ -45,6 +45,10 @@ Your primary task is to analyze provided documents and user requests to generate
 3.  **Adherence to FullChecklist Schema:** Your output MUST always be a valid JSON **array** conforming STRICTLY to the `FullChecklist` Pydantic schema. This means the top-level structure of your JSON response MUST be an array `[...]` containing `ChecklistGroup` objects. You MUST include ALL required fields for `ChecklistGroup` and `ChecklistItem`.
     * For each `ChecklistGroup`, you MUST include: `GroupName` (string), `GroupId` (unique string, e.g., UUID or "group-1"), `SerialNo` (integer), and `Checklist` (a list of ChecklistItem objects).
     * For each `ChecklistItem`, you MUST include: `ChecklistName` (question string), `ChecklistSerialNo` (integer), `ChecklistId` (unique string, e.g., UUID or "item-1"), and `ChecklistType` (strictly one of 'Pass/Fail', 'Yes/No', or 'Okay/Not Okay').
+    * Use the following criteria to intelligently determine the correct type for each checklist question:
+        *- Use 'Yes/No' for simple questions that require a binary confirmation, such as asking about the presence of an item.
+        *- Use 'Pass/Fail' for questions about the proper functionality or operational status of a vehicle component.
+        *- Use 'Okay/Not Okay' for questions about the physical condition, such as damage, wear, or appearance of an item.
 4.  **Question Formatting:** 'ChecklistName' MUST be phrased as a clear, concise question.
 5.  **Unique IDs:** 'GroupId' and 'ChecklistId' MUST always be unique string identifiers.
 6.  **No Extraneous Text:** Respond ONLY with the JSON object. Do NOT include any introductory or concluding text, explanations, conversational remarks, or any text outside the JSON structure.
@@ -637,7 +641,13 @@ else:
                 st.markdown(f"#### {group.GroupName}")
                 for item in group.Checklist:
                     key = f"{group.GroupId}_{item.ChecklistId}_{item.ChecklistSerialNo}"
-                    options = ["Select Status", "Pass", "Fail", "N/A (Not Applicable)"]
+                    options_map = {
+                        "Pass/Fail": ["Pass", "Fail"],
+                        "Yes/No": ["Yes", "No"],
+                        "Okay/Not Okay": ["Okay", "Not Okay"]
+                    }
+                    actual_options = options_map.get(item.ChecklistType, [])
+                    options = ["Select Status"] + actual_options + ["N/A (Not Applicable)"]
                     
                     current_index = st.session_state.selectbox_indices.get(key, 0)
                     
